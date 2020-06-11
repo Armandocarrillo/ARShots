@@ -51,22 +51,22 @@ class ViewController: UIViewController, ARSCNViewDelegate {
   
     
 
-    func createWall(planeAnchor : ARPlaneAnchor) -> SCNNode{
+func createWall(planeAnchor : ARPlaneAnchor) -> SCNNode{
         let node = SCNNode()
         let geometry = SCNPlane(width: 0.5, height: 1)
         node.geometry = geometry
         
         node.eulerAngles.x = -Float.pi/2
-        node.opacity = 0.5
+        node.opacity = 0
         return node
         }
-    
+  
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         guard let planeAnchor = anchor as? ARPlaneAnchor else {
             return
         }
         print("A new plane has been discovered.")
-        let wall = createWall(planeAnchor: planeAnchor)
+       let wall = createWall(planeAnchor: planeAnchor)
         node.addChildNode(wall)
         
         
@@ -85,7 +85,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let planePosition = result.worldTransform.columns.3
         hoopNode.position = SCNVector3(planePosition.x, planePosition.y, planePosition.z)
         // Add the node to the scene
-      
+    hoopNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(node: hoopNode, options: [SCNPhysicsShape.Option.type : SCNPhysicsShape.ShapeType.concavePolyhedron]))
         sceneView.scene.rootNode.addChildNode(hoopNode)
     }
     
@@ -99,8 +99,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let cameraTransform = SCNMatrix4(currentFrame.camera.transform)
         ball.transform = cameraTransform
         print("se creo una pelota")
-        let physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(node: ball))
+        let physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(node: ball, options: [SCNPhysicsShape.Option.collisionMargin:0.01]))
         ball.physicsBody = physicsBody
+        
+        let power = Float(10.0)
+        let force = SCNVector3(-cameraTransform.m31*power, -cameraTransform.m32*power, -cameraTransform.m33*power)
+        
+        ball.physicsBody?.applyForce(force, asImpulse: true)
         
         sceneView.scene.rootNode.addChildNode(ball)
         
