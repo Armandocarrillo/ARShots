@@ -99,6 +99,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let cameraTransform = SCNMatrix4(currentFrame.camera.transform)
         ball.transform = cameraTransform
         print("se creo una pelota")
+        let physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(node: ball))
+        ball.physicsBody = physicsBody
+        
         sceneView.scene.rootNode.addChildNode(ball)
         
         
