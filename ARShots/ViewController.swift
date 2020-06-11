@@ -24,10 +24,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        //let scene = SCNScene(named: "art.scnassets/hoop.scn")!
         
         // Set the scene to the view
-        sceneView.scene = scene
+        //sceneView.scene = scene
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -35,7 +35,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
-
+        configuration.planeDetection = .vertical
         // Run the view's session
         sceneView.session.run(configuration)
     }
@@ -48,16 +48,62 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
 
     // MARK: - ARSCNViewDelegate
+  
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
+
+    func createWall(planeAnchor : ARPlaneAnchor) -> SCNNode{
         let node = SCNNode()
-     
+        let geometry = SCNPlane(width: 0.5, height: 1)
+        node.geometry = geometry
+        
+        node.eulerAngles.x = -Float.pi/2
+        node.opacity = 0.5
         return node
-    }
-*/
+        }
     
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else {
+            return
+        }
+        print("A new plane has been discovered.")
+        let wall = createWall(planeAnchor: planeAnchor)
+        node.addChildNode(wall)
+        
+        
+        
+    }
+    
+   func addHoop(result: ARHitTestResult){
+        // Retrieve the scene file and locate the Hoop node
+        
+        let hoopScene = SCNScene(named: "art.scnassets/hoop.scn")
+        
+        guard let hoopNode = hoopScene?.rootNode.childNode(withName: "Hoop", recursively: false) else {
+            return
+            }
+        // Place the node in the correct position
+        let planePosition = result.worldTransform.columns.3
+        hoopNode.position = SCNVector3(planePosition.x, planePosition.y, planePosition.z)
+        // Add the node to the scene
+      
+        sceneView.scene.rootNode.addChildNode(hoopNode)
+    }
+    
+   
+    func createBasketball(){
+        guard let currentFrame = sceneView.session.currentFrame else
+        { return }
+        
+        let ball = SCNNode(geometry: SCNSphere(radius: 0.25))
+        ball.geometry?.firstMaterial?.diffuse.contents = UIColor.orange
+        let cameraTransform = SCNMatrix4(currentFrame.camera.transform)
+        ball.transform = cameraTransform
+        print("se creo una pelota")
+        sceneView.scene.rootNode.addChildNode(ball)
+        
+        
+        
+    }
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
         
@@ -72,4 +118,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Reset tracking and/or remove existing anchors if consistent tracking is required
         
     }
+    var hoopAdded = false
+    
+    @IBAction func screenTapped(_ sender: UITapGestureRecognizer){
+        if !hoopAdded {
+        let touchLocation = sender.location(in: sceneView)
+        let hitTestResult = sceneView.hitTest(touchLocation, types: [.existingPlane])
+        
+        print("tapped")
+        
+        if let result = hitTestResult.first{
+            addHoop(result: result)
+            hoopAdded = true
+    }
+        }else {
+            createBasketball()
+        }
+}
 }
